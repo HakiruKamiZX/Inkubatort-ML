@@ -1,70 +1,57 @@
 import pandas as pd
+import matplotlib
+matplotlib.use('Agg') 
 import matplotlib.pyplot as plt
 import numpy as np
-import io
-
-# --- Main Program Starts Here ---
 
 try:
     # Load the dataset from the CSV file
-    # The script will first try to read 'cleaned_data.csv'.
     df = pd.read_csv('cleaned_data.csv')
     print("Successfully loaded 'cleaned_data.csv'.")
 
-    # Select only the numerical columns to check for outliers
-    numerical_cols = df.select_dtypes(include=np.number).columns.tolist()
+    col_to_analyze = 'Tanda Vital: Suhu'
 
-    print("\n--- Outlier Detection Report ---")
+    print(f"\n--- Outlier Detection Report for '{col_to_analyze}' ---")
+    if col_to_analyze in df.columns:
 
-    # Iterate over each numerical column to find and display outliers
-    for col in numerical_cols:
-        # Drop missing values for calculation to avoid errors
-        col_data = df[col].dropna()
+        col_data = df[col_to_analyze].dropna()
 
-        print(f"\nAnalyzing column: '{col}'")
-        
-        # Calculate Q1 (25th percentile) and Q3 (75th percentile)
-        Q1 = col_data.quantile(0.25)
-        Q3 = col_data.quantile(0.75)
-        
-        # Calculate the Interquartile Range (IQR)
-        IQR = Q3 - Q1
-        
-        # Define the lower and upper bounds for outlier detection
-        lower_bound = Q1 - 1.5 * IQR
-        upper_bound = Q3 + 1.5 * IQR
-        
-        # Identify outliers
-        outliers = df[(df[col] < lower_bound) | (df[col] > upper_bound)]
-        
-        if not outliers.empty:
-            print(f"Found {len(outliers)} outliers in '{col}':")
-            # Display the rows containing outliers
-            print(outliers[[col]]) # Show only the relevant column for clarity
+        if col_data.empty:
+            print(f"\nColumn '{col_to_analyze}' contains no numerical data.")
         else:
-            print(f"No outliers detected in '{col}'.")
+            Q1 = col_data.quantile(0.25)
+            Q3 = col_data.quantile(0.75)
+            
+            IQR = Q3 - Q1
+            
+            lower_bound = Q1 - 1.5 * IQR
+            upper_bound = Q3 + 1.5 * IQR
+            
+            outliers = df[(df[col_to_analyze] < lower_bound) | (df[col_to_analyze] > upper_bound)]
+            
+            if not outliers.empty:
+                print(f"Found {len(outliers)} outliers in '{col_to_analyze}':")
 
-    # --- Visualization with Boxplots ---
-    if numerical_cols:
-        print("\nGenerating boxplots for visualization...")
-        # Create a boxplot for each numerical column
-        plt.figure(figsize=(20, 10)) # Increased figure size for better readability
-        df[numerical_cols].plot(kind='box', subplots=True, layout=(-1, 5),
-                               sharey=False, patch_artist=True, figsize=(20, 10))
-        plt.suptitle("Boxplot for Each Numerical Feature to Visualize Outliers", fontsize=16)
-        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-        
-        # *** CHANGE: Save the plot to a file instead of showing it ***
-        output_filename = 'outlier_boxplots.png'
-        plt.savefig(output_filename)
-        
-        print(f"\nBoxplots saved successfully to '{output_filename}'")
-        # plt.show() # This line is commented out to prevent the Tcl/Tk error
+                print(outliers[[col_to_analyze]]) 
+            else:
+                print(f"No outliers detected in '{col_to_analyze}'.")
 
+            print(f"\nGenerating a boxplot for '{col_to_analyze}'...")
+            plt.figure(figsize=(8, 6)) 
+            df[[col_to_analyze]].plot(kind='box', patch_artist=True)
+            plt.title(f"Boxplot for {col_to_analyze}", fontsize=16)
+            plt.ylabel("Values")
+            
+            output_filename = 'suhu_outlier_boxplot.png'
+            plt.savefig(output_filename)
+            
+            print(f"\nBoxplot saved successfully to '{output_filename}'")
     else:
-        print("\nNo numerical columns found to create boxplots.")
+        print(f"Error: Column '{col_to_analyze}' not found in the CSV file.")
+
 
 except FileNotFoundError:
     print("Error: 'cleaned_data.csv' not found. Please ensure the file is in the same directory as the script.")
 except Exception as e:
     print(f"An error occurred: {e}")
+
